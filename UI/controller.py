@@ -28,6 +28,8 @@ class Controller:
         self._view.txt_result.controls.append(ft.Text(f"Numero di archi: {nArchi}"))
         self._view.update_page()
 
+        self.fillDDProdotti()
+
     def handleBestProdotti(self, e):
         bestProdotti = self._model.getNodiPiuVenduti()
         self._view.txt_result.controls.clear()
@@ -37,7 +39,61 @@ class Controller:
         self._view.update_page()
 
     def handleCercaCammino(self, e):
-        pass
+        if self._view._txtInLun.value == "":
+            self._view.txt_result.controls.clear()
+            self._view.txt_result.controls.append(ft.Text("Attenzione, inserire un valore numerico in Lun",
+                                                          color="red"))
+            self._view.update_page()
+            return
+
+        try:
+            lun = int(self._view._txtInLun.value)
+        except ValueError:
+            self._view.txt_result.controls.clear()
+            self._view.txt_result.controls.append(ft.Text("Attenzione, inserire un valore numerico in Lun",
+                                                              color="red"))
+            self._view.update_page()
+            return
+
+        path, score = self._model.getBestPath(lun, self._prodStartValue, self._prodEndValue)
+
+        if len(path) == 0:
+            self._view.txt_result.controls.clear()
+            self._view.txt_result.controls.append(ft.Text(f"Non ho trovato un cammino fra {self._prodStartValue} e {self._prodEndValue}."))
+            self._view.update_page()
+            return
+
+        self._view.txt_result.controls.clear()
+        self._view.txt_result.controls.append(
+            ft.Text(f"Ecco il cammino migliore fra {self._prodStartValue} e {self._prodEndValue}."))
+
+        for p in path:
+            self._view.txt_result.controls.append(ft.Text(p))
+        self._view.txt_result.controls.append(ft.Text(f"Score: {score}"))
+        self._view.update_page()
+
+    def fillDDProdotti(self):
+        allProdotti = self._model.getAllNodes()
+        nodesDDOptionStart = list(map(lambda x: ft.dropdown.Option(
+            data = x,
+            key = x.product_name,
+            on_click= self._choiceProdStart),allProdotti))
+
+        nodesDDOptionEnd = list(map(lambda x: ft.dropdown.Option(
+            data=x,
+            key=x.product_name,
+            on_click=self._choiceProdEnd), allProdotti))
+
+        self._view._ddProdStart.options = nodesDDOptionStart
+        self._view._ddProdEnd.options = nodesDDOptionEnd
+
+        self._view.update_page()
+
+    def _choiceProdStart(self, e):
+        self._prodStartValue = e.control.data
+
+    def _choiceProdEnd(self, e):
+        self._prodEndValue = e.control.data
 
     def fillDDCategorie(self):
         categories = self._model.getCategorie()

@@ -1,3 +1,5 @@
+import copy
+
 import networkx as nx
 
 from database.DAO import DAO
@@ -8,6 +10,34 @@ class Model:
         self._graph = nx.DiGraph()
         self._products = []
         self._idMapP = {}
+        self._bestPath = []
+        self._bestScore = 0
+
+    def getBestPath(self, lun, start, end):
+        self._bestPath = []
+        self._bestScore = 0
+        parziale = [start]
+        self._ricorsione(parziale, lun, end)
+        return self._bestPath, self._bestScore
+
+    def _ricorsione(self, parziale, lun, end):
+        if len(parziale) == lun:
+            if parziale[-1] == end and self._getScore(parziale) > self._bestScore:
+                self._bestScore = self._getScore(parziale)
+                self._bestPath = copy.deepcopy(parziale)
+            return
+
+        for n in self._graph.successors(parziale[-1]):
+            if n not in parziale:
+                parziale.append(n)
+                self._ricorsione(parziale, lun, end)
+                parziale.pop()
+
+    def _getScore(self, parziale):
+        score = 0
+        for i in range(1, len(parziale)-1):
+            score += self._graph[parziale[i]][parziale[i+1]]["weight"]
+        return score
 
     def buildGraph(self, cat, date1, date2):
         self._graph.clear()
@@ -46,3 +76,5 @@ class Model:
     def getCategorie(self):
         return DAO.getCategorie()
 
+    def getAllNodes(self):
+        return list(self._graph.nodes)
